@@ -1,0 +1,22 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { Client } from "pg";
+const root="/opt/grasklad-sborka",warehouseId=47;
+for(const raw of fs.readFileSync(path.join(root,".env"),"utf8").split(/\r?\n/)){const line=raw.trim();if(!line||line.startsWith("#"))continue;const i=line.indexOf("=");if(i<1)continue;const k=line.slice(0,i).trim();let v=line.slice(i+1).trim();if((v.startsWith('"')&&v.endsWith('"'))||(v.startsWith("'")&&v.endsWith("'")))v=v.slice(1,-1);if(!process.env[k])process.env[k]=v;}
+const db=new Client({host:process.env.SKLAD_DB_HOST,port:Number(process.env.SKLAD_DB_PORT||5432),database:process.env.SKLAD_DB_NAME,user:process.env.SKLAD_DB_USER,password:process.env.SKLAD_DB_PASSWORD,ssl:String(process.env.SKLAD_DB_SSL||"disable").toLowerCase()==="disable"?false:{rejectUnauthorized:false}});
+async function barcode(){for(let i=0;i<100;i++){const value=String(crypto.randomInt(100000000,1000000000));const found=await db.query(`select 1 from racks_s where barcode_value=$1 union all select 1 from shelves_s where barcode_value=$1 union all select 1 from shelf_boxes_s where barcode_value=$1 limit 1`,[value]);if(!found.rowCount)return value;}throw new Error("Не удалось создать уникальный штрихкод");}
+await db.connect();try{
+ await db.query("begin");await db.query("select pg_advisory_xact_lock(hashtext($1))",[`warehouse-structure:${warehouseId}`]);
+ const warehouse=(await db.query("select id,name from warehouses_s where id=$1 for update",[warehouseId])).rows[0];if(!warehouse||warehouse.name!=="Кутузовская 31")throw new Error("Склад не найден");
+ const before={createdAt:new Date().toISOString(),warehouse,racks:(await db.query("select * from racks_s where warehouse_id=$1 order by id",[warehouseId])).rows,shelves:(await db.query("select s.* from shelves_s s join racks_s r on r.id=s.rack_id where r.warehouse_id=$1 order by s.id",[warehouseId])).rows,boxes:(await db.query("select b.* from shelf_boxes_s b join shelves_s s on s.id=b.shelf_id join racks_s r on r.id=s.rack_id where r.warehouse_id=$1 order by b.id",[warehouseId])).rows};
+ const body=JSON.stringify(before,null,2),backupPath=path.join(root,"backups",`kutuzovskaya-extend2-before-${new Date().toISOString().replace(/[:.]/g,"-")}.json`);fs.writeFileSync(backupPath,body,{mode:0o600});
+ let rack=(await db.query("select * from racks_s where warehouse_id=$1 and number=2 for update",[warehouseId])).rows[0];if(!rack)rack=(await db.query(`insert into racks_s(warehouse_id,name,number,code,barcode_value,created_at,updated_at) values($1,'Стеллаж 2',2,'С2',$2,now(),now()) returning *`,[warehouseId,await barcode()])).rows[0];
+ let shelf=(await db.query("select * from shelves_s where rack_id=$1 and number=1 for update",[rack.id])).rows[0];if(!shelf)shelf=(await db.query(`insert into shelves_s(rack_id,name,number,code,barcode_value,uses_boxes,uses_loose,created_at,updated_at) values($1,'Полка 1',1,'С2П1',$2,true,false,now(),now()) returning *`,[rack.id,await barcode()])).rows[0];
+ const occupied=(await db.query("select * from shelf_boxes_s where shelf_id=$1 and (product_id is not null or quantity<>0) for update",[shelf.id])).rows;if(occupied.length)throw new Error("Новая полка уже содержит товар");
+ for(let position=1;position<=8;position++){const exists=(await db.query("select id from shelf_boxes_s where shelf_id=$1 and position=$2 for update",[shelf.id,position])).rows[0];if(!exists)await db.query(`insert into shelf_boxes_s(shelf_id,position,name,barcode_value,quantity,box_size,status,confirmed,created_at) values($1,$2,$3,$4,0,50,'closed',false,now())`,[shelf.id,position,`С2П1К${position}`,await barcode()]);}
+ const extra=(await db.query("select count(*)::int count from shelf_boxes_s where shelf_id=$1 and position>8",[shelf.id])).rows[0];if(Number(extra.count))throw new Error("На новой полке есть лишние коробки");
+ await db.query("commit");
+ const verify=(await db.query(`select count(distinct r.id)::int racks,count(distinct s.id)::int shelves,count(distinct b.id)::int boxes from racks_s r left join shelves_s s on s.rack_id=r.id left join shelf_boxes_s b on b.shelf_id=s.id where r.warehouse_id=$1`,[warehouseId])).rows[0];
+ console.log(JSON.stringify({ok:true,backupPath,backupSha256:crypto.createHash("sha256").update(body).digest("hex"),verify,newRack:rack.id,newShelf:shelf.id},null,2));
+}catch(e){await db.query("rollback").catch(()=>{});throw e;}finally{await db.end();}

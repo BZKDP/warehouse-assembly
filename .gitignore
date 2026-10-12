@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.vite/
+out/
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+.playwright-cli/
+# runtime-загрузки и данные
+**/var/
+**/public-files/
+*.tgz
+backups/
+output/
+tmp/
+investigations/

@@ -1,0 +1,14 @@
+{
+  "name": "fbs-sborka",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "pg": "^8.11.5",
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1"
+  }
+}

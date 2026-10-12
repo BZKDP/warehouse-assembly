@@ -1,0 +1,22 @@
+{
+  "name": "grasklad-sborka-unified",
+  "version": "2026.07.28",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:all": "npm --prefix apps/sborka ci && npm --prefix apps/WB ci && npm --prefix apps/OZ ci",
+    "start": "node scripts/start-all.mjs",
+    "start:sborka": "node apps/sborka/server.mjs",
+    "start:wb": "node apps/WB/server.mjs",
+    "start:oz": "node apps/OZ/server.mjs",
+    "health": "node scripts/health-check.mjs",
+    "env:check": "node scripts/validate-env.mjs",
+    "db:preflight": "node scripts/db-preflight.mjs",
+    "db:backup": "node scripts/db-backup.mjs",
+    "migrate:plan": "node scripts/print-migration-plan.mjs",
+    "migrate:apply": "node scripts/apply-migration.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

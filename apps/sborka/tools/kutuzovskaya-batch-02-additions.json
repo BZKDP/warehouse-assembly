@@ -1,0 +1,22 @@
+{
+  "warehouseId": 47,
+  "warehouseName": "Кутузовская 31",
+  "sourceTotalQuantity": 3650,
+  "items": [
+    { "article": "GRA-04730", "quantity": 1450, "sourceName": "магний D3 цитрат" },
+    { "article": "GRA-07940", "quantity": 50, "sourceName": "силимарин" },
+    { "article": "GRA-09100", "quantity": 50, "sourceName": "физетин" },
+    { "article": "GRA-08140", "quantity": 50, "sourceName": "гинкго билоба" },
+    { "article": "GRA-08160", "quantity": 100, "sourceName": "калий магний Q10" },
+    { "article": "GRA-08380", "quantity": 50, "sourceName": "спермидин" },
+    { "article": "GRA-08060", "quantity": 50, "sourceName": "наттокиназа" },
+    { "article": "GRA-07850", "quantity": 100, "sourceName": "5-HTP" },
+    { "article": "GRA-09800", "quantity": 650, "sourceName": "йохимбин + перуанская мака" },
+    { "article": "GRA-07760", "quantity": 200, "sourceName": "iron" },
+    { "article": "GRA-09400", "quantity": 100, "sourceName": "пиколинат хрома" },
+    { "article": "GRA-07810", "quantity": 400, "sourceName": "ежовик гребенчатый" },
+    { "article": "GRA-11300", "quantity": 50, "sourceName": "монолаурин + L-лизин" },
+    { "article": "GRA-01400", "quantity": 100, "sourceName": "ресвератрол" },
+    { "article": "GRA-08240", "quantity": 250, "sourceName": "тримаг" }
+  ]
+}

@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+const source = fs.readFileSync(new URL('./wb-reship-20261011-remote.mjs', import.meta.url));
+const action = ['transfer', 'reset'].includes(process.argv[2]) ? process.argv[2] : 'audit';
+const command = `node --input-type=module -e 'process.env.WB_RESHIP_ACTION="${action}"; await import("data:text/javascript;base64,${source.toString('base64')}")'`;
+const result = spawnSync('ssh', ['-i', '<SSH_KEY>', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8', 'root@<SERVER_HOST>', command], { encoding: 'utf8', timeout: 240000, windowsHide: true });
+process.stdout.write(result.stdout || '');
+process.stderr.write(result.stderr || '');
+if (result.error) console.error(result.error.message);
+process.exitCode = result.status ?? 1;
